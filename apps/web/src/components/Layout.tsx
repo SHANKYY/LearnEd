@@ -4,17 +4,35 @@ import { Dialog } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard' },
-  { name: 'My Courses', href: '/courses' },
-  { name: 'Study Planner', href: '/planner' },
-  { name: 'Resources', href: '/resources' },
-  { name: 'Help Center', href: '/help' },
-];
 
-export default function Layout() {
+
+interface LayoutProps {
+  user: {
+    id: string;
+    name: string;
+    role: string;
+    avatar?: string;
+  };
+  onLogout: () => void;
+}
+
+export default function Layout({ user, onLogout }: LayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+
+  const navigation = user.role === 'STUDENT' 
+    ? [
+        { name: 'Dashboard', href: '/dashboard' },
+        { name: 'My Courses', href: '/courses' },
+        { name: 'Study Planner', href: '/planner' },
+        { name: 'Resources', href: '/resources' },
+        { name: 'Help Center', href: '/help' },
+      ]
+    : [
+        { name: 'Dashboard', href: '/teacher-dashboard' },
+        { name: 'My Courses', href: '/courses' },
+        { name: 'Help Center', href: '/help' },
+      ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-red-900">
@@ -54,13 +72,22 @@ export default function Layout() {
               </Link>
             ))}
           </div>
-          <div className="hidden lg:flex lg:flex-1 lg:justify-end">
+          <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:space-x-4">
+            <span className="text-sm text-gray-300">
+              {user.name} ({user.role.toLowerCase()})
+            </span>
             <Link
               to="/profile"
               className="text-sm font-semibold leading-6 text-gray-300 hover:text-red-400"
             >
-              My Profile <span aria-hidden="true">&rarr;</span>
+              Profile
             </Link>
+            <button
+              onClick={onLogout}
+              className="text-sm font-semibold leading-6 text-gray-300 hover:text-red-400"
+            >
+              Logout
+            </button>
           </div>
         </nav>
         <Dialog as="div" className="lg:hidden" open={mobileMenuOpen} onClose={setMobileMenuOpen}>
@@ -99,14 +126,26 @@ export default function Layout() {
                     </Link>
                   ))}
                 </div>
-                <div className="py-6">
+                <div className="py-6 space-y-2">
+                  <div className="text-sm text-gray-300 px-3">
+                    {user.name} ({user.role.toLowerCase()})
+                  </div>
                   <Link
                     to="/profile"
                     className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-300 hover:text-red-400"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    My Profile
+                    Profile
                   </Link>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onLogout();
+                    }}
+                    className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-300 hover:text-red-400 w-full text-left"
+                  >
+                    Logout
+                  </button>
                 </div>
               </div>
             </div>

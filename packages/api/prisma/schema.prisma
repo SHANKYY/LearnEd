@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
 }
 
 // User management
@@ -12,7 +12,7 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   name      String
-  role      Role
+  role      String   // "STUDENT", "TEACHER", "ADMIN"
   avatar    String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -24,25 +24,19 @@ model User {
   @@map("users")
 }
 
-enum Role {
-  STUDENT
-  TEACHER
-  ADMIN
-}
-
 // Student profile
 model Student {
   id             String          @id @default(cuid())
   userId         String          @unique
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  yearLevel      YearLevel
-  universityGoal UniversityGoal?
+  yearLevel      String          // "YEAR_11", "YEAR_12"
   atar           Float?
   
   // Enrollments and progress
   enrollments    Enrollment[]
-  assessments    Assessment[]
+  submissions    Submission[]
   studyPlans     StudyPlan[]
+  universityGoal UniversityGoal?
   
   @@map("students")
 }
@@ -53,18 +47,13 @@ model Teacher {
   userId       String   @unique
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   department   String
-  specialties  String[] // JSON array of subject specialties
+  specialties  String   // JSON string of subject specialties
   
   // Teaching assignments
   courses      Course[]
   assessments  Assessment[]
   
   @@map("teachers")
-}
-
-enum YearLevel {
-  YEAR_11
-  YEAR_12
 }
 
 // University pathway planning
@@ -99,8 +88,8 @@ model Course {
   code        String       @unique
   name        String
   description String
-  yearLevel   YearLevel
-  subject     Subject
+  yearLevel   String       // "YEAR_11", "YEAR_12"
+  subject     String       // Subject name as string
   units       Int          @default(4) // ATAR units
   teacherId   String
   teacher     Teacher      @relation(fields: [teacherId], references: [id])
@@ -111,32 +100,6 @@ model Course {
   assessments Assessment[]
   
   @@map("courses")
-}
-
-enum Subject {
-  MATHEMATICS_ADVANCED
-  MATHEMATICS_EXTENSION_1
-  MATHEMATICS_EXTENSION_2
-  MATHEMATICS_STANDARD
-  ENGLISH_ADVANCED
-  ENGLISH_EXTENSION_1
-  ENGLISH_EXTENSION_2
-  ENGLISH_STANDARD
-  PHYSICS
-  CHEMISTRY
-  BIOLOGY
-  ECONOMICS
-  BUSINESS_STUDIES
-  MODERN_HISTORY
-  ANCIENT_HISTORY
-  GEOGRAPHY
-  VISUAL_ARTS
-  MUSIC
-  DRAMA
-  DESIGN_TECHNOLOGY
-  INFORMATION_PROCESSES_TECHNOLOGY
-  SOFTWARE_DESIGN_DEVELOPMENT
-  PERSONAL_DEVELOPMENT_HEALTH_PE
 }
 
 // Course content structure
@@ -202,7 +165,7 @@ model Assessment {
   id          String         @id @default(cuid())
   title       String
   description String
-  type        AssessmentType
+  type        String         // "QUIZ", "ASSIGNMENT", "EXAM", "PRACTICAL", "ESSAY"
   courseId    String
   course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
   teacherId   String
@@ -218,21 +181,13 @@ model Assessment {
   @@map("assessments")
 }
 
-enum AssessmentType {
-  QUIZ
-  ASSIGNMENT
-  EXAM
-  PRACTICAL
-  ESSAY
-}
-
 model Question {
   id           String       @id @default(cuid())
   assessmentId String
   assessment   Assessment   @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
   question     String
-  type         QuestionType
-  options      String[]     // JSON array for multiple choice
+  type         String       // "MULTIPLE_CHOICE", "SHORT_ANSWER", "ESSAY", "TRUE_FALSE"
+  options      String?      // JSON string for multiple choice options
   correctAnswer String
   marks        Int
   order        Int
@@ -240,13 +195,6 @@ model Question {
   answers      Answer[]
   
   @@map("questions")
-}
-
-enum QuestionType {
-  MULTIPLE_CHOICE
-  SHORT_ANSWER
-  ESSAY
-  TRUE_FALSE
 }
 
 model Submission {
@@ -299,7 +247,7 @@ model StudySession {
   studyPlanId String
   studyPlan   StudyPlan @relation(fields: [studyPlanId], references: [id], onDelete: Cascade)
   title       String
-  subject     Subject
+  subject     String    // Subject name as string
   startTime   DateTime
   endTime     DateTime
   completed   Boolean   @default(false)

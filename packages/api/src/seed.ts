@@ -1,4 +1,4 @@
-import { PrismaClient, Role, YearLevel, Subject, AssessmentType, QuestionType } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -20,28 +20,28 @@ const universities = [
 // Subject prerequisites for different university disciplines
 const disciplineRequirements = {
   'Medicine': {
-    prerequisite: [Subject.CHEMISTRY, Subject.BIOLOGY, Subject.ENGLISH_ADVANCED],
-    recommended: [Subject.MATHEMATICS_ADVANCED, Subject.PHYSICS]
+    prerequisite: ['CHEMISTRY', 'BIOLOGY', 'ENGLISH_ADVANCED'],
+    recommended: ['MATHEMATICS_ADVANCED', 'PHYSICS']
   },
   'Engineering': {
-    prerequisite: [Subject.MATHEMATICS_EXTENSION_1, Subject.PHYSICS, Subject.ENGLISH_STANDARD],
-    recommended: [Subject.CHEMISTRY, Subject.MATHEMATICS_EXTENSION_2]
+    prerequisite: ['MATHEMATICS_EXTENSION_1', 'PHYSICS', 'ENGLISH_STANDARD'],
+    recommended: ['CHEMISTRY', 'MATHEMATICS_EXTENSION_2']
   },
   'Commerce': {
-    prerequisite: [Subject.MATHEMATICS_STANDARD, Subject.ENGLISH_STANDARD],
-    recommended: [Subject.MATHEMATICS_ADVANCED, Subject.ECONOMICS, Subject.BUSINESS_STUDIES]
+    prerequisite: ['MATHEMATICS_STANDARD', 'ENGLISH_STANDARD'],
+    recommended: ['MATHEMATICS_ADVANCED', 'ECONOMICS', 'BUSINESS_STUDIES']
   },
   'Science': {
-    prerequisite: [Subject.MATHEMATICS_STANDARD, Subject.ENGLISH_STANDARD],
-    recommended: [Subject.CHEMISTRY, Subject.BIOLOGY, Subject.PHYSICS, Subject.MATHEMATICS_ADVANCED]
+    prerequisite: ['MATHEMATICS_STANDARD', 'ENGLISH_STANDARD'],
+    recommended: ['CHEMISTRY', 'BIOLOGY', 'PHYSICS', 'MATHEMATICS_ADVANCED']
   },
   'Arts': {
-    prerequisite: [Subject.ENGLISH_STANDARD],
-    recommended: [Subject.ENGLISH_ADVANCED, Subject.MODERN_HISTORY, Subject.ANCIENT_HISTORY]
+    prerequisite: ['ENGLISH_STANDARD'],
+    recommended: ['ENGLISH_ADVANCED', 'MODERN_HISTORY', 'ANCIENT_HISTORY']
   },
   'Law': {
-    prerequisite: [Subject.ENGLISH_ADVANCED],
-    recommended: [Subject.MODERN_HISTORY, Subject.ECONOMICS, Subject.ENGLISH_EXTENSION_1]
+    prerequisite: ['ENGLISH_ADVANCED'],
+    recommended: ['MODERN_HISTORY', 'ECONOMICS', 'ENGLISH_EXTENSION_1']
   }
 };
 
@@ -64,16 +64,16 @@ const lastNames = [
 
 // Teacher data
 const teacherData = [
-  { name: 'Dr. Sarah Chen', department: 'Mathematics', specialties: [Subject.MATHEMATICS_ADVANCED, Subject.MATHEMATICS_EXTENSION_1, Subject.MATHEMATICS_EXTENSION_2] },
-  { name: 'Mr. David Thompson', department: 'Mathematics', specialties: [Subject.MATHEMATICS_STANDARD, Subject.MATHEMATICS_ADVANCED] },
-  { name: 'Ms. Rebecca Williams', department: 'Science', specialties: [Subject.CHEMISTRY, Subject.BIOLOGY] },
-  { name: 'Dr. Michael Johnson', department: 'Science', specialties: [Subject.PHYSICS, Subject.CHEMISTRY] },
-  { name: 'Ms. Jennifer Clarke', department: 'Science', specialties: [Subject.BIOLOGY] },
-  { name: 'Mr. Robert Anderson', department: 'English', specialties: [Subject.ENGLISH_ADVANCED, Subject.ENGLISH_EXTENSION_1] },
-  { name: 'Ms. Lisa Martinez', department: 'English', specialties: [Subject.ENGLISH_STANDARD, Subject.ENGLISH_ADVANCED] },
-  { name: 'Dr. Andrew Wilson', department: 'Humanities', specialties: [Subject.MODERN_HISTORY, Subject.ANCIENT_HISTORY] },
-  { name: 'Ms. Patricia Taylor', department: 'Commerce', specialties: [Subject.ECONOMICS, Subject.BUSINESS_STUDIES] },
-  { name: 'Mr. Christopher Lee', department: 'Technology', specialties: [Subject.INFORMATION_PROCESSES_TECHNOLOGY, Subject.SOFTWARE_DESIGN_DEVELOPMENT] }
+  { name: 'Dr. Sarah Chen', department: 'Mathematics', specialties: ['MATHEMATICS_ADVANCED', 'MATHEMATICS_EXTENSION_1', 'MATHEMATICS_EXTENSION_2'] },
+  { name: 'Mr. David Thompson', department: 'Mathematics', specialties: ['MATHEMATICS_STANDARD', 'MATHEMATICS_ADVANCED'] },
+  { name: 'Ms. Rebecca Williams', department: 'Science', specialties: ['CHEMISTRY', 'BIOLOGY'] },
+  { name: 'Dr. Michael Johnson', department: 'Science', specialties: ['PHYSICS', 'CHEMISTRY'] },
+  { name: 'Ms. Jennifer Clarke', department: 'Science', specialties: ['BIOLOGY'] },
+  { name: 'Mr. Robert Anderson', department: 'English', specialties: ['ENGLISH_ADVANCED', 'ENGLISH_EXTENSION_1'] },
+  { name: 'Ms. Lisa Martinez', department: 'English', specialties: ['ENGLISH_STANDARD', 'ENGLISH_ADVANCED'] },
+  { name: 'Dr. Andrew Wilson', department: 'Humanities', specialties: ['MODERN_HISTORY', 'ANCIENT_HISTORY'] },
+  { name: 'Ms. Patricia Taylor', department: 'Commerce', specialties: ['ECONOMICS', 'BUSINESS_STUDIES'] },
+  { name: 'Mr. Christopher Lee', department: 'Technology', specialties: ['INFORMATION_PROCESSES_TECHNOLOGY', 'SOFTWARE_DESIGN_DEVELOPMENT'] }
 ];
 
 function getRandomElement<T>(array: T[]): T {
@@ -118,11 +118,11 @@ async function main() {
       data: {
         email,
         name: teacherInfo.name,
-        role: Role.TEACHER,
+        role: 'TEACHER',
         teacher: {
           create: {
             department: teacherInfo.department,
-            specialties: teacherInfo.specialties
+            specialties: JSON.stringify(teacherInfo.specialties)
           }
         }
       },
@@ -136,15 +136,21 @@ async function main() {
 
   // Create courses for Year 11 and Year 12
   const courses = [];
-  const subjects = Object.values(Subject);
+  const subjects = [
+    'MATHEMATICS_ADVANCED', 'MATHEMATICS_EXTENSION_1', 'MATHEMATICS_EXTENSION_2', 'MATHEMATICS_STANDARD',
+    'ENGLISH_ADVANCED', 'ENGLISH_EXTENSION_1', 'ENGLISH_EXTENSION_2', 'ENGLISH_STANDARD',
+    'PHYSICS', 'CHEMISTRY', 'BIOLOGY', 'ECONOMICS', 'BUSINESS_STUDIES',
+    'MODERN_HISTORY', 'ANCIENT_HISTORY', 'GEOGRAPHY', 'VISUAL_ARTS'
+  ];
   
   for (const subject of subjects) {
     // Find appropriate teacher for this subject
-    const appropriateTeacher = teachers.find(t => 
-      t.teacher?.specialties.includes(subject)
-    ) || teachers[0]; // Fallback to first teacher
+    const appropriateTeacher = teachers.find(t => {
+      const specialties = JSON.parse(t.teacher?.specialties || '[]');
+      return specialties.includes(subject);
+    }) || teachers[0]; // Fallback to first teacher
 
-    for (const yearLevel of [YearLevel.YEAR_11, YearLevel.YEAR_12]) {
+    for (const yearLevel of ['YEAR_11', 'YEAR_12']) {
       const course = await prisma.course.create({
         data: {
           code: `${subject}_${yearLevel}`,
@@ -152,7 +158,7 @@ async function main() {
           description: `Comprehensive ${subject.replace(/_/g, ' ').toLowerCase()} course for ${yearLevel.replace('_', ' ')} students preparing for university entrance.`,
           yearLevel,
           subject,
-          units: [Subject.MATHEMATICS_EXTENSION_1, Subject.MATHEMATICS_EXTENSION_2, Subject.ENGLISH_EXTENSION_1, Subject.ENGLISH_EXTENSION_2].includes(subject) ? 2 : 4,
+          units: ['MATHEMATICS_EXTENSION_1', 'MATHEMATICS_EXTENSION_2', 'ENGLISH_EXTENSION_1', 'ENGLISH_EXTENSION_2'].includes(subject) ? 2 : 4,
           teacherId: appropriateTeacher.teacher!.id
         }
       });
@@ -195,7 +201,7 @@ async function main() {
   // Create students (50 Year 11, 50 Year 12)
   const students = [];
   for (let i = 0; i < 100; i++) {
-    const yearLevel = i < 50 ? YearLevel.YEAR_11 : YearLevel.YEAR_12;
+    const yearLevel = i < 50 ? 'YEAR_11' : 'YEAR_12';
     const firstName = getRandomElement(firstNames);
     const lastName = getRandomElement(lastNames);
     const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${i + 1}@student.learned.edu.au`;
@@ -211,11 +217,11 @@ async function main() {
       data: {
         email,
         name: `${firstName} ${lastName}`,
-        role: Role.STUDENT,
+        role: 'STUDENT',
         student: {
           create: {
             yearLevel,
-            atar: yearLevel === YearLevel.YEAR_12 ? Math.random() * 20 + 80 : null, // Year 12 students have estimated ATAR
+            atar: yearLevel === 'YEAR_12' ? Math.random() * 20 + 80 : null, // Year 12 students have estimated ATAR
             universityGoal: {
               create: {
                 university: selectedUniversity.name,
@@ -294,7 +300,7 @@ async function main() {
 
   // Create assessments for each course
   for (const course of courses) {
-    const assessmentTypes = [AssessmentType.QUIZ, AssessmentType.ASSIGNMENT, AssessmentType.EXAM];
+    const assessmentTypes = ['QUIZ', 'ASSIGNMENT', 'EXAM'];
     
     for (let i = 0; i < 3; i++) {
       const assessment = await prisma.assessment.create({
@@ -316,9 +322,9 @@ async function main() {
           data: {
             assessmentId: assessment.id,
             question: getQuestionText(course.subject, j + 1),
-            type: getRandomElement(Object.values(QuestionType)),
-            options: QuestionType.MULTIPLE_CHOICE === QuestionType.MULTIPLE_CHOICE ? 
-              ['Option A', 'Option B', 'Option C', 'Option D'] : [],
+            type: getRandomElement(['MULTIPLE_CHOICE', 'SHORT_ANSWER', 'ESSAY', 'TRUE_FALSE']),
+            options: Math.random() > 0.5 ? 
+              JSON.stringify(['Option A', 'Option B', 'Option C', 'Option D']) : null,
             correctAnswer: 'A', // Simplified for demo
             marks: 10,
             order: j + 1
@@ -342,7 +348,7 @@ async function main() {
     });
 
     // Create study sessions for the next 2 weeks
-    const subjects = Object.values(Subject).slice(0, 6); // First 6 subjects
+    const subjects = ['MATHEMATICS_ADVANCED', 'ENGLISH_ADVANCED', 'CHEMISTRY', 'PHYSICS', 'BIOLOGY', 'ECONOMICS']; // First 6 subjects
     for (let day = 0; day < 14; day++) {
       const sessionDate = new Date(Date.now() + day * 24 * 60 * 60 * 1000);
       
@@ -375,42 +381,42 @@ async function main() {
 }
 
 // Helper functions for generating content
-function getModuleTitle(subject: Subject, moduleIndex: number): string {
-  const moduleMap: Record<Subject, string[]> = {
-    [Subject.MATHEMATICS_ADVANCED]: ['Functions and Graphs', 'Calculus Fundamentals', 'Trigonometry and Geometry', 'Statistics and Probability'],
-    [Subject.CHEMISTRY]: ['Atomic Structure', 'Chemical Bonding', 'Organic Chemistry', 'Chemical Equilibrium'],
-    [Subject.PHYSICS]: ['Mechanics', 'Waves and Sound', 'Electricity and Magnetism', 'Modern Physics'],
-    [Subject.BIOLOGY]: ['Cell Biology', 'Genetics', 'Evolution', 'Ecology'],
-    [Subject.ENGLISH_ADVANCED]: ['Critical Analysis', 'Creative Writing', 'Poetry and Drama', 'Essay Techniques'],
-    [Subject.MODERN_HISTORY]: ['World War I', 'World War II', 'Cold War', 'Contemporary Issues'],
-    [Subject.ECONOMICS]: ['Market Forces', 'Government Policy', 'International Trade', 'Economic Indicators'],
-    [Subject.BUSINESS_STUDIES]: ['Business Planning', 'Marketing', 'Finance', 'Operations Management']
+function getModuleTitle(subject: string, moduleIndex: number): string {
+  const moduleMap: Record<string, string[]> = {
+    'MATHEMATICS_ADVANCED': ['Functions and Graphs', 'Calculus Fundamentals', 'Trigonometry and Geometry', 'Statistics and Probability'],
+    'CHEMISTRY': ['Atomic Structure', 'Chemical Bonding', 'Organic Chemistry', 'Chemical Equilibrium'],
+    'PHYSICS': ['Mechanics', 'Waves and Sound', 'Electricity and Magnetism', 'Modern Physics'],
+    'BIOLOGY': ['Cell Biology', 'Genetics', 'Evolution', 'Ecology'],
+    'ENGLISH_ADVANCED': ['Critical Analysis', 'Creative Writing', 'Poetry and Drama', 'Essay Techniques'],
+    'MODERN_HISTORY': ['World War I', 'World War II', 'Cold War', 'Contemporary Issues'],
+    'ECONOMICS': ['Market Forces', 'Government Policy', 'International Trade', 'Economic Indicators'],
+    'BUSINESS_STUDIES': ['Business Planning', 'Marketing', 'Finance', 'Operations Management']
   };
 
   return moduleMap[subject]?.[moduleIndex - 1] || `Core Concepts ${moduleIndex}`;
 }
 
-function getLessonTitle(subject: Subject, moduleIndex: number, lessonIndex: number): string {
+function getLessonTitle(subject: string, moduleIndex: number, lessonIndex: number): string {
   return `Understanding ${getModuleTitle(subject, moduleIndex)} - Part ${lessonIndex}`;
 }
 
-function getLessonContent(subject: Subject, moduleIndex: number, lessonIndex: number): string {
+function getLessonContent(subject: string, moduleIndex: number, lessonIndex: number): string {
   return `This lesson covers fundamental concepts in ${subject.replace(/_/g, ' ')} related to ${getModuleTitle(subject, moduleIndex)}. Students will learn through interactive examples, practice problems, and real-world applications. The content is aligned with the Australian Curriculum and designed to prepare students for university-level study.`;
 }
 
-function getQuestionText(subject: Subject, questionNumber: number): string {
-  const questionTemplates: Record<Subject, string[]> = {
-    [Subject.MATHEMATICS_ADVANCED]: [
+function getQuestionText(subject: string, questionNumber: number): string {
+  const questionTemplates: Record<string, string[]> = {
+    'MATHEMATICS_ADVANCED': [
       'Find the derivative of f(x) = x³ + 2x² - 5x + 1',
       'Solve the equation 2x² - 8x + 6 = 0',
       'Calculate the area under the curve y = x² from x = 0 to x = 2'
     ],
-    [Subject.CHEMISTRY]: [
+    'CHEMISTRY': [
       'What is the molecular formula for glucose?',
       'Balance the equation: C₂H₆ + O₂ → CO₂ + H₂O',
       'Explain the concept of electronegativity'
     ],
-    [Subject.PHYSICS]: [
+    'PHYSICS': [
       'Calculate the velocity of an object after falling for 3 seconds',
       'What is the relationship between frequency and wavelength?',
       'Explain Newton\'s second law of motion'

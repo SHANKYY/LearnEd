@@ -2,7 +2,6 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { Role } from '@prisma/client';
 
 const router = express.Router();
 
@@ -15,7 +14,7 @@ const registerSchema = z.object({
   email: z.string().email(),
   name: z.string().min(2),
   password: z.string().min(6),
-  role: z.enum([Role.STUDENT, Role.TEACHER]),
+  role: z.enum(['STUDENT', 'TEACHER']),
   yearLevel: z.enum(['YEAR_11', 'YEAR_12']).optional(),
   department: z.string().optional(),
 });
