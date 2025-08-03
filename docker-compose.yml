@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # API Service
+  api:
+    build:
+      context: .
+      dockerfile: packages/api/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:./prisma/dev.db
+      - JWT_SECRET=${JWT_SECRET:-learned-production-secret-2024}
+      - PORT=3001
+      - FRONTEND_URL=http://localhost:3000
+    volumes:
+      - ./packages/api/prisma:/app/prisma
+    depends_on:
+      - postgres
+    networks:
+      - learned-network
+
+  # Web Service
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=http://localhost:3001
+    depends_on:
+      - api
+    networks:
+      - learned-network
+
+  # PostgreSQL Database (for production)
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=learned_prod
+      - POSTGRES_USER=learned_user
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-learned_secure_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./packages/api/prisma/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - learned-network
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - learned-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  learned-network:
+    driver: bridge
