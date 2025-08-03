@@ -40,8 +40,8 @@ export default function Login({ onLogin }: LoginProps) {
   };
 
   const sampleCredentials = [
-    { type: 'Student', email: 'alexander.smith1@student.learned.edu.au', password: 'student123' },
-    { type: 'Student', email: 'emily.johnson2@student.learned.edu.au', password: 'student123' },
+    { type: 'Student', email: 'matthew.king1@student.learned.edu.au', password: 'student123' },
+    { type: 'Student', email: 'ethan.jackson2@student.learned.edu.au', password: 'student123' },
     { type: 'Teacher', email: 'drsarahchen@learned.edu.au', password: 'teacher123' },
     { type: 'Teacher', email: 'mrdavidthompson@learned.edu.au', password: 'teacher123' },
   ];
