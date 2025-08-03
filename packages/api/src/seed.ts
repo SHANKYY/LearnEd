@@ -111,7 +111,7 @@ async function main() {
   // Create teachers
   const teachers = [];
   for (const teacherInfo of teacherData) {
-    const hashedPassword = await bcrypt.hash('teacher123', 10);
+
     const email = `${teacherInfo.name.toLowerCase().replace(/[^a-z]/g, '')}@learned.edu.au`;
     
     const user = await prisma.user.create({
@@ -206,7 +206,42 @@ async function main() {
     const lastName = getRandomElement(lastNames);
     const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${i + 1}@student.learned.edu.au`;
     
-    const hashedPassword = await bcrypt.hash('student123', 10);
+    // Create a specific test student for easy login
+    if (i === 0) {
+      const testUser = await prisma.user.create({
+        data: {
+          email: 'alexander.smith1@student.learned.edu.au',
+          name: 'Alexander Smith',
+          role: 'STUDENT',
+          student: {
+            create: {
+              yearLevel: 'YEAR_11',
+              atar: null,
+              universityGoal: {
+                create: {
+                  university: 'University of Sydney',
+                  degree: 'Bachelor of Engineering',
+                  discipline: 'Engineering',
+                  requiredAtar: 85,
+                  subjects: {
+                    create: [
+                      { subjectCode: 'MATHEMATICS_EXTENSION_1', subjectName: 'MATHEMATICS EXTENSION 1', isPrerequisite: true, recommendedMark: 85 },
+                      { subjectCode: 'PHYSICS', subjectName: 'PHYSICS', isPrerequisite: true, recommendedMark: 80 },
+                      { subjectCode: 'ENGLISH_STANDARD', subjectName: 'ENGLISH STANDARD', isPrerequisite: true, recommendedMark: 75 }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        include: { student: true }
+      });
+      students.push(testUser);
+      continue;
+    }
+    
+
 
     // Select a university goal
     const selectedUniversity = getRandomElement(universities);
