@@ -1,1 +1,309 @@
-// Prisma schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// User management
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      Role
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Role-specific profiles
+  student Student?
+  teacher Teacher?
+
+  @@map("users")
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+// Student profile
+model Student {
+  id             String          @id @default(cuid())
+  userId         String          @unique
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  yearLevel      YearLevel
+  universityGoal UniversityGoal?
+  atar           Float?
+  
+  // Enrollments and progress
+  enrollments    Enrollment[]
+  assessments    Assessment[]
+  studyPlans     StudyPlan[]
+  
+  @@map("students")
+}
+
+// Teacher profile
+model Teacher {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department   String
+  specialties  String[] // JSON array of subject specialties
+  
+  // Teaching assignments
+  courses      Course[]
+  assessments  Assessment[]
+  
+  @@map("teachers")
+}
+
+enum YearLevel {
+  YEAR_11
+  YEAR_12
+}
+
+// University pathway planning
+model UniversityGoal {
+  id           String            @id @default(cuid())
+  studentId    String            @unique
+  student      Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  university   String
+  degree       String
+  discipline   String
+  requiredAtar Float
+  subjects     UniversitySubject[]
+  
+  @@map("university_goals")
+}
+
+model UniversitySubject {
+  id              String         @id @default(cuid())
+  universityGoalId String
+  universityGoal  UniversityGoal @relation(fields: [universityGoalId], references: [id], onDelete: Cascade)
+  subjectCode     String
+  subjectName     String
+  isPrerequisite  Boolean        @default(false)
+  recommendedMark Float?
+  
+  @@map("university_subjects")
+}
+
+// Course structure
+model Course {
+  id          String       @id @default(cuid())
+  code        String       @unique
+  name        String
+  description String
+  yearLevel   YearLevel
+  subject     Subject
+  units       Int          @default(4) // ATAR units
+  teacherId   String
+  teacher     Teacher      @relation(fields: [teacherId], references: [id])
+  
+  // Course content
+  modules     Module[]
+  enrollments Enrollment[]
+  assessments Assessment[]
+  
+  @@map("courses")
+}
+
+enum Subject {
+  MATHEMATICS_ADVANCED
+  MATHEMATICS_EXTENSION_1
+  MATHEMATICS_EXTENSION_2
+  MATHEMATICS_STANDARD
+  ENGLISH_ADVANCED
+  ENGLISH_EXTENSION_1
+  ENGLISH_EXTENSION_2
+  ENGLISH_STANDARD
+  PHYSICS
+  CHEMISTRY
+  BIOLOGY
+  ECONOMICS
+  BUSINESS_STUDIES
+  MODERN_HISTORY
+  ANCIENT_HISTORY
+  GEOGRAPHY
+  VISUAL_ARTS
+  MUSIC
+  DRAMA
+  DESIGN_TECHNOLOGY
+  INFORMATION_PROCESSES_TECHNOLOGY
+  SOFTWARE_DESIGN_DEVELOPMENT
+  PERSONAL_DEVELOPMENT_HEALTH_PE
+}
+
+// Course content structure
+model Module {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  order       Int
+  
+  lessons     Lesson[]
+  
+  @@map("modules")
+}
+
+model Lesson {
+  id          String   @id @default(cuid())
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title       String
+  content     String   // Rich text content
+  videoUrl    String?
+  duration    Int      // Duration in minutes
+  order       Int
+  
+  progress    LessonProgress[]
+  
+  @@map("lessons")
+}
+
+// Student enrollment and progress
+model Enrollment {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  enrolledAt DateTime @default(now())
+  
+  progress  LessonProgress[]
+  
+  @@unique([studentId, courseId])
+  @@map("enrollments")
+}
+
+model LessonProgress {
+  id           String     @id @default(cuid())
+  enrollmentId String
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lessonId     String
+  lesson       Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completed    Boolean    @default(false)
+  timeSpent    Int        @default(0) // Time in minutes
+  completedAt  DateTime?
+  
+  @@unique([enrollmentId, lessonId])
+  @@map("lesson_progress")
+}
+
+// Assessment system
+model Assessment {
+  id          String         @id @default(cuid())
+  title       String
+  description String
+  type        AssessmentType
+  courseId    String
+  course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacherId   String
+  teacher     Teacher        @relation(fields: [teacherId], references: [id])
+  totalMarks  Int
+  weight      Float          // Percentage weight towards final grade
+  dueDate     DateTime
+  createdAt   DateTime       @default(now())
+  
+  questions   Question[]
+  submissions Submission[]
+  
+  @@map("assessments")
+}
+
+enum AssessmentType {
+  QUIZ
+  ASSIGNMENT
+  EXAM
+  PRACTICAL
+  ESSAY
+}
+
+model Question {
+  id           String       @id @default(cuid())
+  assessmentId String
+  assessment   Assessment   @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  question     String
+  type         QuestionType
+  options      String[]     // JSON array for multiple choice
+  correctAnswer String
+  marks        Int
+  order        Int
+  
+  answers      Answer[]
+  
+  @@map("questions")
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  SHORT_ANSWER
+  ESSAY
+  TRUE_FALSE
+}
+
+model Submission {
+  id           String     @id @default(cuid())
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  submittedAt  DateTime   @default(now())
+  score        Float?
+  feedback     String?
+  
+  answers      Answer[]
+  
+  @@unique([assessmentId, studentId])
+  @@map("submissions")
+}
+
+model Answer {
+  id           String     @id @default(cuid())
+  submissionId String
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  questionId   String
+  question     Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answer       String
+  isCorrect    Boolean?
+  marksAwarded Float?
+  
+  @@unique([submissionId, questionId])
+  @@map("answers")
+}
+
+// Study planning
+model StudyPlan {
+  id        String      @id @default(cuid())
+  studentId String
+  student   Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title     String
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime    @default(now())
+  
+  sessions  StudySession[]
+  
+  @@map("study_plans")
+}
+
+model StudySession {
+  id          String    @id @default(cuid())
+  studyPlanId String
+  studyPlan   StudyPlan @relation(fields: [studyPlanId], references: [id], onDelete: Cascade)
+  title       String
+  subject     Subject
+  startTime   DateTime
+  endTime     DateTime
+  completed   Boolean   @default(false)
+  notes       String?
+  
+  @@map("study_sessions")
+}
