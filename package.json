@@ -1,0 +1,25 @@
+{
+  "name": "learned",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev:api": "npm run dev --workspace=packages/api",
+    "build": "npm run build --workspaces",
+    "db:generate": "npm run db:generate --workspace=packages/api",
+    "db:push": "npm run db:push --workspace=packages/api", 
+    "db:seed": "npm run db:seed --workspace=packages/api",
+    "setup": "npm install && npm run db:generate && npm run db:push && npm run db:seed"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
